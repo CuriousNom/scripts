@@ -23,22 +23,23 @@ echo "=== NikGapps to Vendor GMS Converter ==="
 echo "Input: $NIKGAPPS_ZIP"
 echo ""
 
-# Create extraction directory
-EXTRACT_DIR="nikgapps_extracted_$$"
+# Create extraction directory with simple name
+EXTRACT_DIR="gms_temp"
+rm -rf "$EXTRACT_DIR" 2>/dev/null || true
 mkdir -p "$EXTRACT_DIR"
 
-echo "[1/12] Extracting NikGapps zip..."
+echo "[1/13] Extracting NikGapps zip..."
 unzip -q "$NIKGAPPS_ZIP" -d "$EXTRACT_DIR"
 
-echo "[2/12] Finding AppSet directory..."
+echo "[2/13] Finding AppSet directory..."
 cd "$EXTRACT_DIR"
 
 # Find and keep only AppSet, delete everything else
 if [ -d "AppSet" ]; then
-    echo "[3/12] Cleaning up non-AppSet files..."
+    echo "[3/13] Cleaning up non-AppSet files..."
     find . -maxdepth 1 ! -name 'AppSet' ! -name '.' -exec rm -rf {} + 2>/dev/null || true
     
-    echo "[4/12] Renaming AppSet to gms..."
+    echo "[4/13] Renaming AppSet to gms..."
     mv AppSet gms
     cd gms
 else
@@ -46,56 +47,56 @@ else
     exit 1
 fi
 
-echo "[5/12] Extracting individual app zips..."
+echo "[5/13] Extracting individual app zips..."
 find . -name "*.zip" -exec sh -c 'echo "Extracting $1..."; unzip -q "$1" -d "${1%.zip}"' _ {} \;
 
-echo "[6/12] Removing zip files..."
-find . -name "*.zip" -exec rm -v {} \;
+echo "[6/13] Removing zip files..."
+find . -name "*.zip" -delete
 
-echo "[7/12] Removing installer scripts..."
-find . \( -name "installer.sh" -o -name "uninstaller.sh" \) -exec rm -v {} \;
+echo "[7/13] Removing installer scripts..."
+find . \( -name "installer.sh" -o -name "uninstaller.sh" \) -delete
 
-echo "[8/12] Renaming directory structure (phase 1)..."
-find . -depth -name "___*" -exec bash -c 'old="$1"; new=$(dirname "$old")/$(basename "$old" | sed "s/___/\//g"); newdir=$(dirname "$new"); mkdir -p "$newdir"; mv -v "$old" "$new" 2>/dev/null || true' _ {} \;
+echo "[8/13] Renaming directory structure (phase 1)..."
+find . -depth -name "___*" -exec bash -c 'old="$1"; new=$(dirname "$old")/$(basename "$old" | sed "s/___/\//g"); newdir=$(dirname "$new"); mkdir -p "$newdir"; mv "$old" "$new" 2>/dev/null || true' _ {} \;
 
-echo "[9/12] Renaming directory structure (phase 2 - cleanup)..."
-find . -depth -name "___*" -exec bash -c 'mv -v "$1" "$(echo "$1" | sed "s/___//g")" 2>/dev/null || true' _ {} \;
+echo "[9/13] Renaming directory structure (phase 2 - cleanup)..."
+find . -depth -name "___*" -exec bash -c 'mv "$1" "$(echo "$1" | sed "s/___//g")" 2>/dev/null || true' _ {} \;
 
-echo "[10/12] Creating vendor structure..."
+echo "[10/13] Creating vendor structure..."
 mkdir -p prebuilt/common/{app,priv-app,etc,framework,lib,lib64,overlay,usr,system}
 mkdir -p config/{permissions,sysconfig,default-permissions,security}
 
-echo "[11/12] Moving files to vendor structure..."
+echo "[11/13] Moving files to vendor structure..."
 
 # Move APKs
-find . -path "*/app/*" -name "*.apk" ! -path "./prebuilt/*" -exec bash -c 'appname=$(basename $(dirname "$1")); mkdir -p prebuilt/common/app/$appname; mv -v "$1" prebuilt/common/app/$appname/' _ {} \;
+find . -path "*/app/*" -name "*.apk" ! -path "./prebuilt/*" -exec bash -c 'appname=$(basename $(dirname "$1")); mkdir -p prebuilt/common/app/$appname; mv "$1" prebuilt/common/app/$appname/' _ {} \;
 
-find . -path "*/priv-app/*" -name "*.apk" ! -path "./prebuilt/*" -exec bash -c 'appname=$(basename $(dirname "$1")); mkdir -p prebuilt/common/priv-app/$appname; mv -v "$1" prebuilt/common/priv-app/$appname/' _ {} \;
+find . -path "*/priv-app/*" -name "*.apk" ! -path "./prebuilt/*" -exec bash -c 'appname=$(basename $(dirname "$1")); mkdir -p prebuilt/common/priv-app/$appname; mv "$1" prebuilt/common/priv-app/$appname/' _ {} \;
 
 # Move overlays
-find . -path "*/overlay/*" -name "*.apk" ! -path "./prebuilt/*" -exec mv -v {} prebuilt/common/overlay/ \;
+find . -path "*/overlay/*" -name "*.apk" ! -path "./prebuilt/*" -exec mv {} prebuilt/common/overlay/ \;
 
 # Move config files
-find . -path "*/etc/permissions/*" -type f ! -path "./config/*" -exec mv -v {} config/permissions/ \;
-find . -path "*/etc/sysconfig/*" -type f ! -path "./config/*" -exec mv -v {} config/sysconfig/ \;
-find . -path "*/etc/default-permissions/*" -type f ! -path "./config/*" -exec mv -v {} config/default-permissions/ \;
-find . -path "*/etc/security/*" -type f ! -path "./config/*" -exec bash -c 'mkdir -p config/security/fsverity; cp -rv "$1" config/security/' _ {} \;
+find . -path "*/etc/permissions/*" -type f ! -path "./config/*" -exec mv {} config/permissions/ \;
+find . -path "*/etc/sysconfig/*" -type f ! -path "./config/*" -exec mv {} config/sysconfig/ \;
+find . -path "*/etc/default-permissions/*" -type f ! -path "./config/*" -exec mv {} config/default-permissions/ \;
+find . -path "*/etc/security/*" -type f ! -path "./config/*" -exec bash -c 'mkdir -p config/security/fsverity; cp -r "$1" config/security/' _ {} \; 2>/dev/null || true
 
 # Move framework
-find . -name "*.jar" ! -path "./prebuilt/*" -exec mv -v {} prebuilt/common/framework/ \;
+find . -name "*.jar" ! -path "./prebuilt/*" -exec mv {} prebuilt/common/framework/ \; 2>/dev/null || true
 
 # Move libraries
-find . -path "*/lib/*" -name "*.so" ! -path "*/arm64/*" ! -path "./prebuilt/*" -exec mv -v {} prebuilt/common/lib/ \;
-find . -path "*/lib64/*" -name "*.so" ! -path "./prebuilt/*" -exec mv -v {} prebuilt/common/lib64/ \;
-find . -path "*/lib/arm64/*" -name "*.so" ! -path "./prebuilt/*" -exec bash -c 'mkdir -p prebuilt/common/lib/arm64; mv -v "$1" prebuilt/common/lib/arm64/' _ {} \;
+find . -path "*/lib/*" -name "*.so" ! -path "*/arm64/*" ! -path "./prebuilt/*" -exec mv {} prebuilt/common/lib/ \; 2>/dev/null || true
+find . -path "*/lib64/*" -name "*.so" ! -path "./prebuilt/*" -exec mv {} prebuilt/common/lib64/ \; 2>/dev/null || true
+find . -path "*/lib/arm64/*" -name "*.so" ! -path "./prebuilt/*" -exec bash -c 'mkdir -p prebuilt/common/lib/arm64; mv "$1" prebuilt/common/lib/arm64/' _ {} \; 2>/dev/null || true
 
 # Move usr (GBoard data)
-find . -type d -name "usr" -path "*/GBoard/*/usr" ! -path "./prebuilt/*" -exec cp -rv {} prebuilt/common/ \;
+find . -type d -name "usr" -path "*/GBoard/*/usr" ! -path "./prebuilt/*" -exec cp -r {} prebuilt/common/ \; 2>/dev/null || true
 
 # Move system files (textclassifier)
-find . -path "*/system/etc/textclassifier/*" -type f ! -path "./prebuilt/*" -exec bash -c 'mkdir -p prebuilt/common/system/etc/textclassifier; cp -v "$1" prebuilt/common/system/etc/textclassifier/' _ {} \;
+find . -path "*/system/etc/textclassifier/*" -type f ! -path "./prebuilt/*" -exec bash -c 'mkdir -p prebuilt/common/system/etc/textclassifier; cp "$1" prebuilt/common/system/etc/textclassifier/' _ {} \; 2>/dev/null || true
 
-echo "[12/12] Creating build files..."
+echo "[12/13] Creating build files..."
 
 # Create vendor.mk
 cat > vendor.mk << 'VENDOR_MK'
@@ -189,4 +190,28 @@ ANDROID_MK
 cat > BoardConfig.mk << 'BOARD_MK'
 # GApps Board Configuration
 BOARD_MK
+
+echo "[13/13] Cleaning up old category directories..."
+rm -rf Core CarrierServices DeviceHealthServices DigitalWellbeing Drive GBoard GoogleCalculator GoogleCalendar GoogleClock GoogleContacts GoogleDialer GoogleFiles GoogleKeep GoogleLocationHistory GoogleMaps GoogleMessages GooglePhotos GoogleRecorder GoogleSearch GoogleSounds GoogleTTS MarkupGoogle PixelSpecifics PlayGames SetupWizard 2>/dev/null || true
+
+# Move gms to parent directory
+cd ..
+mv gms ../gms_final
+cd ..
+rm -rf gms_temp
+
+echo ""
+echo "=== Conversion Complete ==="
+echo "Output directory: gms_final"
+echo ""
+echo "Statistics:"
+echo "  App APKs: $(find gms_final/prebuilt/common/app -name "*.apk" 2>/dev/null | wc -l)"
+echo "  Priv-app APKs: $(find gms_final/prebuilt/common/priv-app -name "*.apk" 2>/dev/null | wc -l)"
+echo "  Overlay APKs: $(find gms_final/prebuilt/common/overlay -name "*.apk" 2>/dev/null | wc -l)"
+echo "  Permissions: $(find gms_final/config/permissions -type f 2>/dev/null | wc -l)"
+echo "  Sysconfig: $(find gms_final/config/sysconfig -type f 2>/dev/null | wc -l)"
+echo ""
+echo "The 'gms_final' directory is ready!"
+echo "Copy to your ROM: cp -r gms_final /path/to/rom/vendor/gms"
+echo ""
 EOF
