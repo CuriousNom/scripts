@@ -2,7 +2,6 @@ cat > convert_nikgapps.sh << 'EOF'
 #!/bin/bash
 
 # NikGapps to Vendor GMS Converter
-# Usage: ./convert_nikgapps.sh <nikgapps.zip>
 
 set -e
 
