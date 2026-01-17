@@ -1,0 +1,5 @@
+### Search file name with 99MB+ size
+find . -type f -size +99M
+
+### Track LFS
+git lfs track filename
