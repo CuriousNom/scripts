@@ -196,22 +196,22 @@ rm -rf Core CarrierServices DeviceHealthServices DigitalWellbeing Drive GBoard G
 
 # Move gms to parent directory
 cd ..
-mv gms ../gms_final
+mv gms ../gms
 cd ..
 rm -rf gms_temp
 
 echo ""
 echo "=== Conversion Complete ==="
-echo "Output directory: gms_final"
+echo "Output directory: gms"
 echo ""
 echo "Statistics:"
-echo "  App APKs: $(find gms_final/prebuilt/common/app -name "*.apk" 2>/dev/null | wc -l)"
-echo "  Priv-app APKs: $(find gms_final/prebuilt/common/priv-app -name "*.apk" 2>/dev/null | wc -l)"
-echo "  Overlay APKs: $(find gms_final/prebuilt/common/overlay -name "*.apk" 2>/dev/null | wc -l)"
-echo "  Permissions: $(find gms_final/config/permissions -type f 2>/dev/null | wc -l)"
-echo "  Sysconfig: $(find gms_final/config/sysconfig -type f 2>/dev/null | wc -l)"
+echo "  App APKs: $(find gms/prebuilt/common/app -name "*.apk" 2>/dev/null | wc -l)"
+echo "  Priv-app APKs: $(find gms/prebuilt/common/priv-app -name "*.apk" 2>/dev/null | wc -l)"
+echo "  Overlay APKs: $(find gms/prebuilt/common/overlay -name "*.apk" 2>/dev/null | wc -l)"
+echo "  Permissions: $(find gms/config/permissions -type f 2>/dev/null | wc -l)"
+echo "  Sysconfig: $(find gms/config/sysconfig -type f 2>/dev/null | wc -l)"
 echo ""
-echo "The 'gms_final' directory is ready!"
-echo "Copy to your ROM: cp -r gms_final /path/to/rom/vendor/gms"
+echo "The 'gms' directory is ready!"
+echo "Copy to your ROM: cp -r gms /path/to/rom/vendor/gms"
 echo ""
 EOF
